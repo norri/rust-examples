@@ -3,7 +3,6 @@ use axum::{body::{to_bytes, Body}, extract::Request, response::Response, routing
 use std::sync::Arc;
 use tower::ServiceExt;
 
-#[allow(dead_code)] // Used in tests
 pub async fn init_router(
     mock_db: MockDatabase,
     uri: String,
@@ -17,7 +16,6 @@ pub async fn init_router(
         .with_state(app_state)
 }
 
-#[allow(dead_code)] // Used in tests
 pub async fn test_get(app: Router, uri: String) -> Response<Body> {
     app.oneshot(
         Request::builder()
@@ -30,7 +28,6 @@ pub async fn test_get(app: Router, uri: String) -> Response<Body> {
     .unwrap()
 }
 
-#[allow(dead_code)] // Used in tests
 pub async fn test_post<T>(app: Router, uri: String, body: T) -> Response<Body>
 where
     T: serde::Serialize,
@@ -47,7 +44,6 @@ where
     .unwrap()
 }
 
-#[allow(dead_code)] // Used in tests
 pub async fn test_delete(app: Router, uri: String) -> Response<Body> {
     app.oneshot(
         Request::builder()
@@ -60,7 +56,6 @@ pub async fn test_delete(app: Router, uri: String) -> Response<Body> {
     .unwrap()
 }
 
-#[allow(dead_code)] // Used in tests
 pub async fn read_response_body<T>(response: axum::response::Response) -> T
 where
     T: serde::de::DeserializeOwned,

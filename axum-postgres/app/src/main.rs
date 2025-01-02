@@ -7,6 +7,8 @@ mod config;
 mod datasources;
 mod logger;
 mod server;
+
+#[cfg(test)]
 mod test_utils;
 
 struct AppState {
