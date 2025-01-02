@@ -1,6 +1,6 @@
 # axum-postgres
 
-This project is a Rust web application using the Axum framework (https://github.com/tokio-rs/axum) with PostgreSQL as a database.
+This is an example of a RESTful API built using the Axum framework (https://github.com/tokio-rs/axum) with PostgreSQL as the database.
 
 ## Setup
 
