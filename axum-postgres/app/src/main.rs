@@ -23,14 +23,17 @@ async fn main() {
 
     let db = new_database(config.database_url, config.database_max_connections)
         .await
-        .unwrap();
+        .expect("database initialization failed");
     let app_state = Arc::new(AppState { db });
 
     let app = new_router(app_state);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port))
         .await
-        .unwrap();
-    tracing::info!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
+        .expect("failed to bind to port");
+    tracing::info!(
+        "listening on {}",
+        listener.local_addr().expect("could not get local address")
+    );
+    axum::serve(listener, app).await.expect("server failed");
 }

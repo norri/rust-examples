@@ -20,3 +20,6 @@ validator = { version = "0.19.0", features = ["derive"] }
 
 [dev-dependencies]
 testcontainers-modules = { version = "0.11.4", features = [ "postgres" ] }
+
+[lints.clippy]
+unwrap_used = "deny"
