@@ -3,9 +3,7 @@ use crate::server::errors::AppError;
 use crate::server::extractors::auth_basic::AuthBasic;
 use axum::Json;
 
-pub async fn protected(
-    AuthBasic((user, _)): AuthBasic,
-) -> Result<Json<ProtectedResponse>, AppError> {
+pub async fn protected(AuthBasic(user): AuthBasic) -> Result<Json<ProtectedResponse>, AppError> {
     Ok(Json(ProtectedResponse {
         message: format!("Hello, {}!", user),
     }))

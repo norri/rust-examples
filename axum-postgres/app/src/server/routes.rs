@@ -4,10 +4,43 @@ use super::handlers::{
 };
 use crate::AppState;
 use axum::{
+    http::{HeaderName, Request},
     routing::{get, post},
     Router,
 };
+use tower::ServiceBuilder;
+use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
+use tower_http::trace::TraceLayer;
+use tracing::{debug_span, error};
+
+const REQUEST_ID_HEADER: &str = "x-request-id";
+
 pub fn new_router(app_state: AppState) -> Router {
+    let x_request_id = HeaderName::from_static(REQUEST_ID_HEADER);
+
+    let middleware = ServiceBuilder::new()
+        .layer(SetRequestIdLayer::new(
+            x_request_id.clone(),
+            MakeRequestUuid,
+        ))
+        .layer(
+            TraceLayer::new_for_http().make_span_with(|req: &Request<_>| {
+                let request_id = req.headers().get(REQUEST_ID_HEADER);
+                let method = req.method();
+                let uri = req.uri();
+                // user is added if the request is authenticated
+                let user = tracing::field::Empty;
+
+                if let Some(request_id) = request_id {
+                    debug_span!("http_request", request_id = ?request_id, %method, %uri, user)
+                } else {
+                    error!("could not extract request_id");
+                    debug_span!("http_request", %method, %uri, user)
+                }
+            }),
+        )
+        .layer(PropagateRequestIdLayer::new(x_request_id));
+
     let api_routes = Router::new()
         .route("/todos", get(todos_list).post(todos_create))
         .route("/todos/:id", post(todos_update).delete(todos_delete))
@@ -16,6 +49,7 @@ pub fn new_router(app_state: AppState) -> Router {
     Router::new()
         .route("/status", get(|| async { "OK" }))
         .nest("/api/v1", api_routes)
+        .layer(middleware)
         .with_state(app_state)
 }
 

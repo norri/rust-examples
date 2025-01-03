@@ -5,6 +5,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use axum_extra::typed_header::TypedHeaderRejection;
 use thiserror::Error;
 use tracing::{error, warn};
 
@@ -67,6 +68,8 @@ impl IntoResponse for AppError {
 pub enum AuthError {
     #[error("authentication failed: {0}")]
     Failed(String),
+    #[error("header error: {0}")]
+    HeaderRejection(#[from] TypedHeaderRejection),
 }
 
 impl IntoResponse for AuthError {
@@ -75,6 +78,10 @@ impl IntoResponse for AuthError {
             AuthError::Failed(_) => {
                 warn!("Authentication failed: {}", self);
                 (StatusCode::UNAUTHORIZED, "invalid credentials".to_string())
+            }
+            AuthError::HeaderRejection(_) => {
+                warn!("Header error: {}", self);
+                (StatusCode::BAD_REQUEST, "invalid authentication header".to_string())
             }
         };
 
