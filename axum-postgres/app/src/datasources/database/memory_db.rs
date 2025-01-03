@@ -14,8 +14,10 @@ impl MemoryDB {
     }
 
     pub async fn get_values(&self) -> Result<Vec<DbTodo>, DatabaseError> {
-        let rows = self.todo_map.read()?;
-        Ok(rows.values().cloned().collect())
+        let rows = self.todo_map
+            .read()
+            .map(|map| map.values().cloned().collect())?;
+        Ok(rows)
     }
 
     pub async fn insert(&self, todo: DbNewTodo) -> Result<DbTodo, DatabaseError> {
