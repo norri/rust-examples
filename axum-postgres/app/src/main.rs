@@ -11,8 +11,10 @@ mod server;
 #[cfg(test)]
 mod test_utils;
 
+#[derive(Clone)]
 struct AppState {
-    db: Database,
+    db: Arc<Database>,
+    credentials: Vec<(String, String)>,
 }
 
 #[tokio::main]
@@ -24,7 +26,10 @@ async fn main() {
     let db = new_database(config.database_url, config.database_max_connections)
         .await
         .expect("database initialization failed");
-    let app_state = Arc::new(AppState { db });
+    let app_state = AppState {
+        db: Arc::new(db),
+        credentials: config.credentials,
+    };
 
     let app = new_router(app_state);
 

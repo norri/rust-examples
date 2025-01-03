@@ -4,12 +4,11 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
-use std::sync::Arc;
 use uuid::Uuid;
 
 pub async fn todos_delete(
     Path(id): Path<String>,
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
     let todo_id =
         Uuid::parse_str(&id) // validate id is UUID
@@ -54,7 +53,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_todos_delete_invalid() {
+    async fn test_todos_delete_invalid_id() {
         let mock_db = MockDatabase::new();
         let app = init_router(mock_db, format!("/todos/:id"), delete(todos_delete)).await;
 

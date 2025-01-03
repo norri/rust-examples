@@ -6,12 +6,11 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use std::sync::Arc;
 use uuid::Uuid;
 
 pub async fn todos_update(
     Path(id): Path<String>,
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
     ValidatedJson(input): ValidatedJson<UpdateTodo>,
 ) -> Result<Json<Todo>, AppError> {
     let todo_id =

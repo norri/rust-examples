@@ -5,6 +5,7 @@ pub struct Config {
     pub database_max_connections: u32,
     pub port: String,
     pub log_level: String,
+    pub credentials: Vec<(String, String)>,
 }
 
 impl Config {
@@ -17,6 +18,18 @@ impl Config {
                 .expect("DATABASE_MAX_CONNECTIONS must be a number"),
             port: env::var("PORT").unwrap_or_else(|_| "3000".to_string()),
             log_level: env::var("LOG_LEVEL").unwrap_or_else(|_| "debug".to_string()),
+            credentials: env::var("CREDENTIALS")
+                .unwrap_or_else(|_| "".to_string())
+                .split(',')
+                .filter_map(|cred| {
+                    let mut parts = cred.split(':');
+                    if let (Some(user), Some(pass)) = (parts.next(), parts.next()) {
+                        Some((user.to_string(), pass.to_string()))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
         }
     }
 }

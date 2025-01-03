@@ -1,16 +1,26 @@
-use crate::{datasources::database::{Database, MockDatabase}, AppState};
-use axum::{body::{to_bytes, Body}, extract::Request, response::Response, routing::MethodRouter, Router};
+use crate::{
+    datasources::database::{Database, MockDatabase},
+    AppState,
+};
+use axum::{
+    body::{to_bytes, Body},
+    extract::Request,
+    response::Response,
+    routing::MethodRouter,
+    Router,
+};
 use std::sync::Arc;
 use tower::ServiceExt;
 
 pub async fn init_router(
     mock_db: MockDatabase,
     uri: String,
-    router: MethodRouter<Arc<AppState>>,
+    router: MethodRouter<AppState>,
 ) -> Router {
-    let app_state = Arc::new(AppState {
-        db: Database::Mock(mock_db),
-    });
+    let app_state = AppState {
+        db: Arc::new(Database::Mock(mock_db)),
+        credentials: vec![("user".to_string(), "pass".to_string())],
+    };
     Router::new()
         .route(uri.as_str(), router)
         .with_state(app_state)
@@ -49,6 +59,24 @@ pub async fn test_delete(app: Router, uri: String) -> Response<Body> {
         Request::builder()
             .method("DELETE")
             .uri(uri)
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await
+    .unwrap()
+}
+
+pub async fn test_authenticated(
+    app: Router,
+    uri: &str,
+    method: &str,
+    auth_header: &str,
+) -> Response<Body> {
+    app.oneshot(
+        Request::builder()
+            .method(method)
+            .uri(uri)
+            .header("Authorization", auth_header)
             .body(Body::empty())
             .unwrap(),
     )

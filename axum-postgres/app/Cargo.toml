@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.7.9", features = ["macros"] }
+base64 = "0.22.1"
 mockall = "0.13.1"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.133"

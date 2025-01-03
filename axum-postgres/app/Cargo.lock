@@ -163,6 +163,7 @@ name = "axum-postgres"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "base64 0.22.1",
  "mockall",
  "serde",
  "serde_json",

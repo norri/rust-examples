@@ -6,10 +6,9 @@ use crate::{
     AppState,
 };
 use axum::{extract::State, http::StatusCode, Json};
-use std::sync::Arc;
 
 pub async fn todos_create(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
     ValidatedJson(input): ValidatedJson<NewTodo>,
 ) -> Result<(StatusCode, Json<Todo>), AppError> {
     let new_todo: DbNewTodo = input.into();

@@ -63,6 +63,25 @@ impl IntoResponse for AppError {
     }
 }
 
+#[derive(Error, Debug)]
+pub enum AuthError {
+    #[error("authentication failed: {0}")]
+    Failed(String),
+}
+
+impl IntoResponse for AuthError {
+    fn into_response(self) -> Response {
+        let (status, message) = match self {
+            AuthError::Failed(_) => {
+                warn!("Authentication failed: {}", self);
+                (StatusCode::UNAUTHORIZED, "invalid credentials".to_string())
+            }
+        };
+
+        (status, Json(ErrorResponse { error: message })).into_response()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

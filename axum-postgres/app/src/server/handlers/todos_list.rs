@@ -2,11 +2,11 @@ use crate::server::domain::todos::TodosResponse;
 use crate::server::errors::AppError;
 use crate::{server::domain::todos::Todo, AppState};
 use axum::{extract::State, Json};
-use std::sync::Arc;
 
 pub async fn todos_list(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
 ) -> Result<Json<TodosResponse>, AppError> {
+
     let db_todos = state.db.get_values().await?;
     let todos: Vec<Todo> = db_todos.into_iter().map(|db_todo| db_todo.into()).collect();
     Ok(Json(TodosResponse { todos }))
