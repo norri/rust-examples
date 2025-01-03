@@ -1,0 +1,46 @@
+name: CI test and lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  find-projects:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.find-projects.outputs.projects }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Find Rust projects
+        id: find-projects
+        run: |
+          projects=$(find . -type f -name 'Cargo.toml' -exec dirname {} \; | jq -R . | jq -s . | jq -c .)
+          echo "projects=$projects" >> $GITHUB_OUTPUT
+
+  test-and-lint:
+    needs: find-projects
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.find-projects.outputs.projects) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - name: Run lint
+        run: |
+          echo "Running lint in ${{ matrix.project }}"
+          cd ${{ matrix.project }}
+          cargo clippy -- -Dwarnings
+      - name: Run tests
+        run: |
+          echo "Running tests in ${{ matrix.project }}"
+          cd ${{ matrix.project }}
+          cargo test --no-fail-fast
