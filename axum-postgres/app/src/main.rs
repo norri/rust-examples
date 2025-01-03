@@ -12,7 +12,7 @@ mod server;
 mod test_utils;
 
 struct AppState {
-    db: Box<dyn Database>,
+    db: Database,
 }
 
 #[tokio::main]

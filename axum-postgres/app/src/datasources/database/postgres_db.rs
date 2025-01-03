@@ -1,8 +1,7 @@
 use super::{
     models::{DbNewTodo, DbTodo, DbUpdateTodo},
-    Database, DatabaseError,
+    DatabaseError,
 };
-use axum::async_trait;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::time::Duration;
 use uuid::Uuid;
@@ -20,18 +19,15 @@ impl PostgresDB {
             .await?;
         Ok(PostgresDB { pool })
     }
-}
 
-#[async_trait]
-impl Database for PostgresDB {
-    async fn get_values(&self) -> Result<Vec<DbTodo>, DatabaseError> {
+    pub async fn get_values(&self) -> Result<Vec<DbTodo>, DatabaseError> {
         let rows = sqlx::query_as::<_, DbTodo>("SELECT id, text, completed FROM todos")
             .fetch_all(&self.pool)
             .await?;
         Ok(rows)
     }
 
-    async fn insert(&self, todo: DbNewTodo) -> Result<DbTodo, DatabaseError> {
+    pub async fn insert(&self, todo: DbNewTodo) -> Result<DbTodo, DatabaseError> {
         let row = sqlx::query_as::<_, DbTodo>(
             "INSERT INTO todos (id, text, completed) VALUES ($1, $2, $3) RETURNING id, text, completed",
         )
@@ -43,7 +39,7 @@ impl Database for PostgresDB {
         Ok(row)
     }
 
-    async fn remove(&self, id: Uuid) -> Result<(), DatabaseError> {
+    pub async fn remove(&self, id: Uuid) -> Result<(), DatabaseError> {
         let result = sqlx::query("DELETE FROM todos WHERE id = $1")
             .bind(id)
             .execute(&self.pool)
@@ -54,7 +50,7 @@ impl Database for PostgresDB {
         Ok(())
     }
 
-    async fn update(&self, id: Uuid, todo: DbUpdateTodo) -> Result<DbTodo, DatabaseError> {
+    pub async fn update(&self, id: Uuid, todo: DbUpdateTodo) -> Result<DbTodo, DatabaseError> {
         let row = sqlx::query_as::<_, DbTodo>(
             "UPDATE todos SET text = COALESCE($1, text), completed = COALESCE($2, completed) WHERE id = $3 RETURNING id, text, completed"
         )
@@ -65,7 +61,7 @@ impl Database for PostgresDB {
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => DatabaseError::NotFound { id },
-            e => DatabaseError::SqlxError(e),
+            e => DatabaseError::Internal(e.to_string()),
         })?;
         Ok(row)
     }
@@ -174,7 +170,10 @@ mod tests {
         };
         let result = db.update(not_found_id, update_todo).await;
         assert!(result.is_err());
-        assert!(matches!(result.err().unwrap(), DatabaseError::NotFound { id: _not_found_id }));
+        assert!(matches!(
+            result.err().unwrap(),
+            DatabaseError::NotFound { id: _not_found_id }
+        ));
 
         shutdown(postgres_node).await;
     }
@@ -202,7 +201,10 @@ mod tests {
         let not_found_id = Uuid::new_v4();
         let result = db.remove(not_found_id).await;
         assert!(result.is_err());
-        assert!(matches!(result.err().unwrap(), DatabaseError::NotFound { id: _not_found_id }));
+        assert!(matches!(
+            result.err().unwrap(),
+            DatabaseError::NotFound { id: _not_found_id }
+        ));
 
         shutdown(postgres_node).await;
     }

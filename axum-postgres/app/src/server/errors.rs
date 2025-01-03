@@ -26,7 +26,7 @@ impl From<DatabaseError> for AppError {
     fn from(error: DatabaseError) -> Self {
         match error {
             DatabaseError::NotFound { id: _ } => AppError::NotFound(error.to_string()),
-            DatabaseError::SqlxError(e) => AppError::Unknown(e.to_string()),
+            DatabaseError::Internal(e) => AppError::Unknown(e),
         }
     }
 }
@@ -133,8 +133,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_database_sqlx_error() {
-        let db_error = DatabaseError::SqlxError(sqlx::Error::Protocol("Row not found".to_string()));
+    async fn test_database_internal_error() {
+        let db_error = DatabaseError::Internal("Row not found".to_string());
         let app_error: AppError = db_error.into();
 
         let response: Response = app_error.into_response();

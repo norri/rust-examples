@@ -23,7 +23,7 @@ pub fn new_router(app_state: Arc<AppState>) -> Router {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::datasources::database::MockDatabase;
+    use crate::datasources::database::{Database, MockDatabase};
     use crate::test_utils::test_get;
     use axum::body::to_bytes;
     use axum::http::StatusCode;
@@ -32,7 +32,7 @@ mod tests {
     #[tokio::test]
     async fn test_status_endpoint() {
         let app_state = Arc::new(AppState {
-            db: Box::new(MockDatabase::new()),
+            db: Database::Mock(MockDatabase::new()),
         });
         let app = new_router(app_state);
 

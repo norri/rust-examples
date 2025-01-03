@@ -1,6 +1,5 @@
-use super::{Database, DatabaseError, DbNewTodo, DbTodo, DbUpdateTodo};
+use super::{DatabaseError, DbNewTodo, DbTodo, DbUpdateTodo};
 use std::{collections::HashMap, sync::RwLock};
-use axum::async_trait;
 use uuid::Uuid;
 
 pub struct MemoryDB {
@@ -13,35 +12,34 @@ impl MemoryDB {
             todo_map: RwLock::new(HashMap::new()),
         }
     }
-}
 
-#[async_trait]
-impl Database for MemoryDB {
-    async fn get_values(&self) -> Result<Vec<DbTodo>, DatabaseError> {
-        let map = self.todo_map.read().unwrap();
-        Ok(map.values().cloned().collect())
+    pub async fn get_values(&self) -> Result<Vec<DbTodo>, DatabaseError> {
+        let rows = self.todo_map.read()?;
+        Ok(rows.values().cloned().collect())
     }
 
-    async fn insert(&self, todo: DbNewTodo) -> Result<DbTodo, DatabaseError> {
-        let mut map = self.todo_map.write().unwrap();
+    pub async fn insert(&self, todo: DbNewTodo) -> Result<DbTodo, DatabaseError> {
         let todo = DbTodo {
             id: uuid::Uuid::new_v4(),
             text: todo.text,
             completed: false,
         };
-        map.insert(todo.id, todo.clone());
+        self.todo_map
+            .write()
+            .map(|mut map| map.insert(todo.id, todo.clone()))?;
         Ok(todo)
     }
 
-    async fn remove(&self, id: Uuid) -> Result<(), DatabaseError> {
-        let mut map = self.todo_map.write().unwrap();
-        map.remove(&id)
+    pub async fn remove(&self, id: Uuid) -> Result<(), DatabaseError> {
+        self.todo_map
+            .write()
+            .map(|mut map| map.remove(&id))?
             .ok_or(DatabaseError::NotFound { id })?;
         Ok(())
     }
 
-    async fn update(&self, id: Uuid, todo: DbUpdateTodo) -> Result<DbTodo, DatabaseError> {
-        let mut map = self.todo_map.write().unwrap();
+    pub async fn update(&self, id: Uuid, todo: DbUpdateTodo) -> Result<DbTodo, DatabaseError> {
+        let mut map = self.todo_map.write()?;
         if let Some(existing_todo) = map.get_mut(&id) {
             if let Some(text) = todo.text {
                 existing_todo.text = text;
@@ -59,7 +57,7 @@ impl Database for MemoryDB {
 #[cfg(test)]
 mod tests {
     use crate::datasources::database::{
-        memory_db::MemoryDB, Database, DatabaseError, DbNewTodo, DbUpdateTodo
+        memory_db::MemoryDB, DatabaseError, DbNewTodo, DbUpdateTodo,
     };
     use uuid::Uuid;
 
@@ -102,6 +100,17 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_remove_not_found() {
+        let db = MemoryDB::new();
+        let result = db.remove(Uuid::new_v4()).await;
+        assert!(result.is_err());
+        assert!(matches!(
+            result.err().unwrap(),
+            DatabaseError::NotFound { id: _ }
+        ));
+    }
+
+    #[tokio::test]
     async fn test_update() {
         let db = MemoryDB::new();
         let new_todo = DbNewTodo {
@@ -128,6 +137,9 @@ mod tests {
         };
         let result = db.update(Uuid::new_v4(), update_todo).await;
         assert!(result.is_err());
-        assert!(matches!(result.err().unwrap(), DatabaseError::NotFound { id: _ }));
+        assert!(matches!(
+            result.err().unwrap(),
+            DatabaseError::NotFound { id: _ }
+        ));
     }
 }

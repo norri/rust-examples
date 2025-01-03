@@ -1,8 +1,8 @@
-use axum::async_trait;
 use memory_db::MemoryDB;
 use mockall::automock;
 use models::{DbNewTodo, DbTodo, DbUpdateTodo};
 use postgres_db::PostgresDB;
+use std::sync::PoisonError;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -15,28 +15,77 @@ pub enum DatabaseError {
     #[error("database item not found with id: {id}")]
     NotFound { id: Uuid },
     #[error("database query failed: {0}")]
-    SqlxError(#[from] sqlx::Error),
+    Internal(String),
+}
+
+impl<T> From<PoisonError<T>> for DatabaseError {
+    fn from(error: PoisonError<T>) -> Self {
+        DatabaseError::Internal(error.to_string())
+    }
+}
+
+impl From<sqlx::Error> for DatabaseError {
+    fn from(error: sqlx::Error) -> Self {
+        DatabaseError::Internal(error.to_string())
+    }
+}
+
+pub enum Database {
+    Postgres(PostgresDB),
+    Memory(MemoryDB),
+    #[cfg(test)]
+    Mock(MockDatabase),
 }
 
 #[automock]
-#[async_trait]
-pub trait Database: Send + Sync {
-    async fn get_values(&self) -> Result<Vec<DbTodo>, DatabaseError>;
-    async fn insert(&self, todo: DbNewTodo) -> Result<DbTodo, DatabaseError>;
-    async fn remove(&self, id: Uuid) -> Result<(), DatabaseError>;
-    async fn update(&self, id: Uuid, todo: DbUpdateTodo) -> Result<DbTodo, DatabaseError>;
+impl Database {
+    pub async fn get_values(&self) -> Result<Vec<DbTodo>, DatabaseError> {
+        match self {
+            Database::Postgres(pg) => pg.get_values().await,
+            Database::Memory(memdb) => memdb.get_values().await,
+            #[cfg(test)]
+            Database::Mock(mock) => mock.get_values().await,
+        }
+    }
+
+    pub async fn insert(&self, todo: DbNewTodo) -> Result<DbTodo, DatabaseError> {
+        match self {
+            Database::Postgres(pg) => pg.insert(todo).await,
+            Database::Memory(memdb) => memdb.insert(todo).await,
+            #[cfg(test)]
+            Database::Mock(mock) => mock.insert(todo).await,
+        }
+    }
+
+    pub async fn remove(&self, id: Uuid) -> Result<(), DatabaseError> {
+        match self {
+            Database::Postgres(pg) => pg.remove(id).await,
+            Database::Memory(memdb) => memdb.remove(id).await,
+            #[cfg(test)]
+            Database::Mock(mock) => mock.remove(id).await,
+        }
+    }
+
+    pub async fn update(&self, id: Uuid, todo: DbUpdateTodo) -> Result<DbTodo, DatabaseError> {
+        match self {
+            Database::Postgres(pg) => pg.update(id, todo).await,
+            Database::Memory(memdb) => memdb.update(id, todo).await,
+            #[cfg(test)]
+            Database::Mock(mock) => mock.update(id, todo).await,
+        }
+    }
 }
 
 pub async fn new_database(
     database_url: Option<String>,
     max_connections: u32,
-) -> Result<Box<dyn Database>, String> {
+) -> Result<Database, String> {
     match database_url {
         Some(url) => {
             if url.starts_with("postgres://") {
                 tracing::info!("Using Postgres database with url: {}", url,);
                 match PostgresDB::new(url, max_connections).await {
-                    Ok(db) => Ok(Box::new(db) as Box<dyn Database>),
+                    Ok(db) => Ok(Database::Postgres(db)),
                     Err(e) => Err(format!("Failed to connect to Postgres database: {}", e)),
                 }
             } else {
@@ -45,7 +94,7 @@ pub async fn new_database(
         }
         None => {
             tracing::info!("Using in-memory database");
-            Ok(Box::new(MemoryDB::new()) as Box<dyn Database>)
+            Ok(Database::Memory(MemoryDB::new()))
         }
     }
 }
@@ -54,10 +103,7 @@ pub async fn new_database(
 mod tests {
     use super::*;
     use sqlx::Error as SqlxError;
-    use testcontainers_modules::{
-        postgres,
-        testcontainers::runners::AsyncRunner,
-    };
+    use testcontainers_modules::{postgres, testcontainers::runners::AsyncRunner};
 
     #[tokio::test]
     async fn test_new_database_postgres() {
@@ -102,9 +148,16 @@ mod tests {
     }
 
     #[test]
-    fn test_database_error_query_failed() {
+    fn test_database_error_sqlx_query_failed() {
         let sqlx_error = SqlxError::RowNotFound;
-        let error = DatabaseError::SqlxError(sqlx_error);
+        let error = DatabaseError::Internal(sqlx_error.to_string());
         assert!(format!("{}", error).contains("database query failed: no rows returned"));
+    }
+
+    #[test]
+    fn test_database_error_poison_error() {
+        let poison_error = PoisonError::new("Poisoned");
+        let error = DatabaseError::Internal(poison_error.to_string());
+        assert!(format!("{}", error).contains("database query failed: poisoned lock"));
     }
 }

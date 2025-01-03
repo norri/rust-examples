@@ -1,4 +1,4 @@
-use crate::{datasources::database::MockDatabase, AppState};
+use crate::{datasources::database::{Database, MockDatabase}, AppState};
 use axum::{body::{to_bytes, Body}, extract::Request, response::Response, routing::MethodRouter, Router};
 use std::sync::Arc;
 use tower::ServiceExt;
@@ -9,7 +9,7 @@ pub async fn init_router(
     router: MethodRouter<Arc<AppState>>,
 ) -> Router {
     let app_state = Arc::new(AppState {
-        db: Box::new(mock_db),
+        db: Database::Mock(mock_db),
     });
     Router::new()
         .route(uri.as_str(), router)
