@@ -1,6 +1,6 @@
 use crate::{
     datasources::database::{Database, MockDatabase},
-    AppState,
+    AppState, SharedState,
 };
 use axum::{
     body::{to_bytes, Body},
@@ -15,12 +15,12 @@ use tower::ServiceExt;
 pub async fn init_router(
     mock_db: MockDatabase,
     uri: String,
-    router: MethodRouter<AppState>,
+    router: MethodRouter<SharedState>,
 ) -> Router {
-    let app_state = AppState {
-        db: Arc::new(Database::Mock(mock_db)),
+    let app_state = Arc::new(AppState {
+        db: Database::Mock(mock_db),
         credentials: vec![("user".to_string(), "pass".to_string())],
-    };
+    });
     Router::new()
         .route(uri.as_str(), router)
         .with_state(app_state)

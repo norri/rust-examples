@@ -1,10 +1,11 @@
 use crate::server::domain::todos::TodosResponse;
 use crate::server::errors::AppError;
-use crate::{server::domain::todos::Todo, AppState};
+use crate::SharedState;
+use crate::server::domain::todos::Todo;
 use axum::{extract::State, Json};
 
 pub async fn todos_list(
-    State(state): State<AppState>,
+    State(state): State<SharedState>,
 ) -> Result<Json<TodosResponse>, AppError> {
 
     let db_todos = state.db.get_values().await?;

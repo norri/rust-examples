@@ -1,7 +1,8 @@
 use crate::server::domain::todos::UpdateTodo;
 use crate::server::errors::AppError;
 use crate::server::extractors::request_json::ValidatedJson;
-use crate::{server::domain::todos::Todo, AppState};
+use crate::SharedState;
+use crate::server::domain::todos::Todo;
 use axum::{
     extract::{Path, State},
     Json,
@@ -10,7 +11,7 @@ use uuid::Uuid;
 
 pub async fn todos_update(
     Path(id): Path<String>,
-    State(state): State<AppState>,
+    State(state): State<SharedState>,
     ValidatedJson(input): ValidatedJson<UpdateTodo>,
 ) -> Result<Json<Todo>, AppError> {
     let todo_id =

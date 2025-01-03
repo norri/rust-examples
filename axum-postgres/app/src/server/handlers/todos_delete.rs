@@ -1,5 +1,4 @@
-use crate::server::errors::AppError;
-use crate::AppState;
+use crate::{server::errors::AppError, SharedState};
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -8,7 +7,7 @@ use uuid::Uuid;
 
 pub async fn todos_delete(
     Path(id): Path<String>,
-    State(state): State<AppState>,
+    State(state): State<SharedState>,
 ) -> Result<StatusCode, AppError> {
     let todo_id =
         Uuid::parse_str(&id) // validate id is UUID

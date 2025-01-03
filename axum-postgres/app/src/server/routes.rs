@@ -2,7 +2,7 @@ use super::handlers::{
     protected::protected, todos_create::todos_create, todos_delete::todos_delete,
     todos_list::todos_list, todos_update::todos_update,
 };
-use crate::AppState;
+use crate::SharedState;
 use axum::{
     http::{HeaderName, Request},
     routing::{get, post},
@@ -15,7 +15,7 @@ use tracing::{debug_span, error};
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 
-pub fn new_router(app_state: AppState) -> Router {
+pub fn new_router(app_state: SharedState) -> Router {
     let x_request_id = HeaderName::from_static(REQUEST_ID_HEADER);
 
     let middleware = ServiceBuilder::new()
@@ -58,16 +58,17 @@ mod tests {
     use super::*;
     use crate::datasources::database::{Database, MockDatabase};
     use crate::test_utils::test_get;
+    use crate::AppState;
     use axum::body::to_bytes;
     use axum::http::StatusCode;
     use std::sync::Arc;
 
     #[tokio::test]
     async fn test_status_endpoint() {
-        let app_state = AppState {
-            db: Arc::new(Database::Mock(MockDatabase::new())),
+        let app_state = Arc::new(AppState {
+            db: Database::Mock(MockDatabase::new()),
             credentials: vec![("user".to_string(), "password".to_string())],
-        };
+        });
         let app = new_router(app_state);
 
         let response = test_get(app, format!("/status")).await;

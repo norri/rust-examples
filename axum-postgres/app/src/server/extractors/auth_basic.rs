@@ -1,5 +1,5 @@
 use crate::server::errors::AuthError;
-use crate::AppState;
+use crate::SharedState;
 use axum::RequestPartsExt;
 use axum::{
     async_trait,
@@ -15,7 +15,7 @@ pub struct AuthBasic(pub String);
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthBasic
 where
-    AppState: FromRef<S>,
+    SharedState: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = AuthError;
@@ -25,7 +25,7 @@ where
             parts.extract::<TypedHeader<Authorization<Basic>>>().await?;
         let header_credentials = (basic.username().to_string(), basic.password().to_string());
 
-        let state = AppState::from_ref(state);
+        let state = SharedState::from_ref(state);
         if state.credentials.contains(&header_credentials) {
             // Record the user in the current span
             let span = Span::current();

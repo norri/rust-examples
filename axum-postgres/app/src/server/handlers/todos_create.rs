@@ -1,14 +1,14 @@
 use crate::server::errors::AppError;
 use crate::server::extractors::request_json::ValidatedJson;
+use crate::SharedState;
 use crate::{
     datasources::database::models::DbNewTodo,
     server::domain::todos::{NewTodo, Todo},
-    AppState,
 };
 use axum::{extract::State, http::StatusCode, Json};
 
 pub async fn todos_create(
-    State(state): State<AppState>,
+    State(state): State<SharedState>,
     ValidatedJson(input): ValidatedJson<NewTodo>,
 ) -> Result<(StatusCode, Json<Todo>), AppError> {
     let new_todo: DbNewTodo = input.into();
