@@ -3,14 +3,13 @@ use mockall::automock;
 use models::{DbNewTodo, DbTodo, DbUpdateTodo};
 use postgres_db::PostgresDB;
 use std::sync::PoisonError;
-use thiserror::Error;
 use uuid::Uuid;
 
 mod memory_db;
 pub mod models;
 mod postgres_db;
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum DatabaseError {
     #[error("database item not found with id: {id}")]
     NotFound { id: Uuid },

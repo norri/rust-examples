@@ -2,6 +2,7 @@ use config::Config;
 use datasources::database::{new_database, Database};
 use server::routes::new_router;
 use std::sync::Arc;
+use tokio::signal;
 
 mod config;
 mod datasources;
@@ -40,5 +41,32 @@ async fn main() {
         "listening on {}",
         listener.local_addr().expect("could not get local address")
     );
-    axum::serve(listener, app).await.expect("server failed");
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .expect("server failed");
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }

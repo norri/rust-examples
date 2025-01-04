@@ -1,6 +1,5 @@
 use crate::server::domain::todos::{NewTodo, UpdateTodo};
 use serde::Serialize;
-
 use sqlx::FromRow;
 use uuid::Uuid;
 

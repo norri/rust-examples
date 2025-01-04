@@ -8,9 +8,13 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use std::time::Duration;
 use tower::ServiceBuilder;
-use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
-use tower_http::trace::TraceLayer;
+use tower_http::{
+    request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer},
+    timeout::TimeoutLayer,
+    trace::TraceLayer,
+};
 use tracing::{debug_span, error};
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
@@ -39,7 +43,8 @@ pub fn new_router(app_state: SharedState) -> Router {
                 }
             }),
         )
-        .layer(PropagateRequestIdLayer::new(x_request_id));
+        .layer(PropagateRequestIdLayer::new(x_request_id))
+        .layer(TimeoutLayer::new(Duration::from_secs(30)));
 
     let api_routes = Router::new()
         .route("/todos", get(todos_list).post(todos_create))

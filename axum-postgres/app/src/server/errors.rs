@@ -27,7 +27,7 @@ impl From<DatabaseError> for AppError {
     fn from(error: DatabaseError) -> Self {
         match error {
             DatabaseError::NotFound { id: _ } => AppError::NotFound(error.to_string()),
-            DatabaseError::Internal(e) => AppError::Unknown(e),
+            DatabaseError::Internal(message) => AppError::Unknown(message),
         }
     }
 }
@@ -39,9 +39,9 @@ impl IntoResponse for AppError {
                 warn!("Bad Request: {}", self);
                 (StatusCode::BAD_REQUEST, "failed to read json".to_string())
             }
-            AppError::ValidationError(ref errors) => {
+            AppError::ValidationError(ref error) => {
                 warn!("Validation error: {}", self);
-                (StatusCode::BAD_REQUEST, errors.to_string())
+                (StatusCode::BAD_REQUEST, error.to_string())
             }
             AppError::BadRequest(ref message) => {
                 warn!("Bad Request: {}", self);

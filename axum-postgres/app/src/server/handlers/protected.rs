@@ -1,10 +1,10 @@
-use crate::server::domain::todos::ProtectedResponse;
+use crate::server::domain::common::MessageResponse;
 use crate::server::errors::AppError;
 use crate::server::extractors::auth_basic::AuthBasic;
 use axum::Json;
 
-pub async fn protected(AuthBasic(user): AuthBasic) -> Result<Json<ProtectedResponse>, AppError> {
-    Ok(Json(ProtectedResponse {
+pub async fn protected(AuthBasic(user): AuthBasic) -> Result<Json<MessageResponse>, AppError> {
+    Ok(Json(MessageResponse {
         message: format!("Hello, {}!", user),
     }))
 }
@@ -12,7 +12,7 @@ pub async fn protected(AuthBasic(user): AuthBasic) -> Result<Json<ProtectedRespo
 #[cfg(test)]
 mod tests {
     use crate::datasources::database::MockDatabase;
-    use crate::server::domain::todos::ProtectedResponse;
+    use crate::server::domain::common::MessageResponse;
     use crate::server::handlers::protected::protected;
     use crate::test_utils::{init_router, read_response_body, test_authenticated};
     use axum::http::StatusCode;
@@ -31,7 +31,7 @@ mod tests {
         let response = test_authenticated(app, "/protected", "GET", header).await;
         assert_eq!(response.status(), StatusCode::OK);
 
-        let response_body: ProtectedResponse = read_response_body(response).await;
+        let response_body: MessageResponse = read_response_body(response).await;
         assert_eq!(response_body.message, "Hello, user!");
     }
 }

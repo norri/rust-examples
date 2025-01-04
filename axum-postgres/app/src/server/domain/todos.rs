@@ -37,11 +37,6 @@ pub struct UpdateTodo {
     pub completed: Option<bool>,
 }
 
-#[derive(Deserialize, Serialize)]
-pub struct ProtectedResponse {
-    pub message: String,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
