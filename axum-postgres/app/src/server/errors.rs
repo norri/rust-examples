@@ -6,28 +6,27 @@ use axum::{
     Json,
 };
 use axum_extra::typed_header::TypedHeaderRejection;
-use thiserror::Error;
 use tracing::{error, warn};
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum AppError {
-    #[error("json rejected: {0}")]
+    #[error(transparent)]
     AxumJsonRejection(#[from] JsonRejection),
-    #[error("validation error: {0}")]
+    #[error(transparent)]
     ValidationError(#[from] validator::ValidationErrors),
-    #[error("bad request: {0}")]
+    #[error("{0}")]
     BadRequest(String),
-    #[error("not found: {0}")]
+    #[error("{0}")]
     NotFound(String),
-    #[error("unknown error: {0}")]
-    Unknown(String),
+    #[error(transparent)]
+    Unknown(#[from] anyhow::Error),
 }
 
 impl From<DatabaseError> for AppError {
     fn from(error: DatabaseError) -> Self {
         match error {
-            DatabaseError::NotFound { id: _ } => AppError::NotFound(error.to_string()),
-            DatabaseError::Internal(message) => AppError::Unknown(message),
+            DatabaseError::NotFound { .. } => AppError::NotFound(error.to_string()),
+            DatabaseError::Internal(error) => AppError::Unknown(error),
         }
     }
 }
@@ -36,7 +35,7 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
             AppError::AxumJsonRejection(_) => {
-                warn!("Bad Request: {}", self);
+                warn!("Invalid JSON in request: {}", self);
                 (StatusCode::BAD_REQUEST, "failed to read json".to_string())
             }
             AppError::ValidationError(ref error) => {
@@ -64,11 +63,11 @@ impl IntoResponse for AppError {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum AuthError {
-    #[error("authentication failed: {0}")]
+    #[error("{0}")]
     Failed(String),
-    #[error("header error: {0}")]
+    #[error(transparent)]
     HeaderRejection(#[from] TypedHeaderRejection),
 }
 
@@ -80,8 +79,11 @@ impl IntoResponse for AuthError {
                 (StatusCode::UNAUTHORIZED, "invalid credentials".to_string())
             }
             AuthError::HeaderRejection(_) => {
-                warn!("Header error: {}", self);
-                (StatusCode::BAD_REQUEST, "invalid authentication header".to_string())
+                warn!("Authentication header error: {}", self);
+                (
+                    StatusCode::BAD_REQUEST,
+                    "invalid authentication header".to_string(),
+                )
             }
         };
 
@@ -93,6 +95,7 @@ impl IntoResponse for AuthError {
 mod tests {
     use super::*;
     use crate::test_utils::read_response_body;
+    use anyhow::anyhow;
     use axum::extract::rejection::MissingJsonContentType;
     use axum::response::Response;
 
@@ -160,7 +163,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_database_internal_error() {
-        let db_error = DatabaseError::Internal("Row not found".to_string());
+        let db_error = DatabaseError::Internal(anyhow!("internal error"));
         let app_error: AppError = db_error.into();
 
         let response: Response = app_error.into_response();
@@ -172,7 +175,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_unknown() {
-        let app_error = AppError::Unknown("unknown error".into());
+        let app_error = AppError::Unknown(anyhow!("unknown error"));
 
         let response: Response = app_error.into_response();
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);

@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use memory_db::MemoryDB;
 use mockall::automock;
 use models::{DbNewTodo, DbTodo, DbUpdateTodo};
@@ -14,18 +15,12 @@ pub enum DatabaseError {
     #[error("database item not found with id: {id}")]
     NotFound { id: Uuid },
     #[error("database query failed: {0}")]
-    Internal(String),
+    Internal(#[from] anyhow::Error),
 }
 
 impl<T> From<PoisonError<T>> for DatabaseError {
     fn from(error: PoisonError<T>) -> Self {
-        DatabaseError::Internal(error.to_string())
-    }
-}
-
-impl From<sqlx::Error> for DatabaseError {
-    fn from(error: sqlx::Error) -> Self {
-        DatabaseError::Internal(error.to_string())
+        DatabaseError::Internal(anyhow!(error.to_string()))
     }
 }
 
@@ -147,16 +142,9 @@ mod tests {
     }
 
     #[test]
-    fn test_database_error_sqlx_query_failed() {
+    fn test_database_error_internal_failed() {
         let sqlx_error = SqlxError::RowNotFound;
-        let error = DatabaseError::Internal(sqlx_error.to_string());
+        let error = DatabaseError::Internal(anyhow::Error::from(sqlx_error));
         assert!(format!("{}", error).contains("database query failed: no rows returned"));
-    }
-
-    #[test]
-    fn test_database_error_poison_error() {
-        let poison_error = PoisonError::new("Poisoned");
-        let error = DatabaseError::Internal(poison_error.to_string());
-        assert!(format!("{}", error).contains("database query failed: poisoned lock"));
     }
 }
