@@ -1,5 +1,6 @@
 use super::{DatabaseError, DbNewTodo, DbTodo, DbUpdateTodo};
-use std::{collections::HashMap, sync::RwLock};
+use std::collections::HashMap;
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 pub struct MemoryDB {
@@ -14,9 +15,7 @@ impl MemoryDB {
     }
 
     pub async fn get_values(&self) -> Result<Vec<DbTodo>, DatabaseError> {
-        let rows = self.todo_map
-            .read()
-            .map(|map| map.values().cloned().collect())?;
+        let rows = self.todo_map.read().await.values().cloned().collect();
         Ok(rows)
     }
 
@@ -26,22 +25,18 @@ impl MemoryDB {
             text: todo.text,
             completed: false,
         };
-        self.todo_map
-            .write()
-            .map(|mut map| map.insert(todo.id, todo.clone()))?;
+        self.todo_map.write().await.insert(todo.id, todo.clone());
         Ok(todo)
     }
 
     pub async fn remove(&self, id: Uuid) -> Result<(), DatabaseError> {
-        self.todo_map
-            .write()
-            .map(|mut map| map.remove(&id))?
-            .ok_or(DatabaseError::NotFound { id })?;
+        let mut map = self.todo_map.write().await;
+        map.remove(&id).ok_or(DatabaseError::NotFound { id })?;
         Ok(())
     }
 
     pub async fn update(&self, id: Uuid, todo: DbUpdateTodo) -> Result<DbTodo, DatabaseError> {
-        let mut map = self.todo_map.write()?;
+        let mut map = self.todo_map.write().await;
         if let Some(existing_todo) = map.get_mut(&id) {
             if let Some(text) = todo.text {
                 existing_todo.text = text;

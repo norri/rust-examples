@@ -11,7 +11,7 @@ use tracing::{error, warn};
 #[derive(thiserror::Error, Debug)]
 pub enum AppError {
     #[error(transparent)]
-    AxumJsonRejection(#[from] JsonRejection),
+    JsonRejection(#[from] JsonRejection),
     #[error(transparent)]
     ValidationError(#[from] validator::ValidationErrors),
     #[error("{0}")]
@@ -34,7 +34,7 @@ impl From<DatabaseError> for AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
-            AppError::AxumJsonRejection(_) => {
+            AppError::JsonRejection(_) => {
                 warn!("Invalid JSON in request: {:?}", self);
                 (StatusCode::BAD_REQUEST, "failed to read json".to_string())
             }
@@ -102,7 +102,7 @@ mod tests {
     #[tokio::test]
     async fn test_json_extractor_rejection() {
         let json_rejection = MissingJsonContentType::default();
-        let app_error = AppError::AxumJsonRejection(json_rejection.into());
+        let app_error = AppError::JsonRejection(json_rejection.into());
         let response: Response = app_error.into_response();
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 

@@ -83,27 +83,27 @@ mod tests {
     const MIGRATOR: Migrator = sqlx::migrate!("./migrations");
 
     async fn setup() -> (ContainerAsync<postgres::Postgres>, PostgresDB) {
-        let postgres_node = postgres::Postgres::default().start().await.unwrap();
+        let postgres_container = postgres::Postgres::default().start().await.unwrap();
 
         let connection_url = &format!(
             "postgres://postgres:postgres@127.0.0.1:{}/postgres",
-            postgres_node.get_host_port_ipv4(5432).await.unwrap()
+            postgres_container.get_host_port_ipv4(5432).await.unwrap()
         );
         let db = PostgresDB::new(connection_url.to_string(), 1)
             .await
             .unwrap();
         MIGRATOR.run(&db.pool).await.unwrap();
 
-        (postgres_node, db)
+        (postgres_container, db)
     }
 
-    async fn shutdown(node: ContainerAsync<postgres::Postgres>) {
-        node.rm().await.unwrap();
+    async fn shutdown(container: ContainerAsync<postgres::Postgres>) {
+        container.rm().await.unwrap();
     }
 
     #[tokio::test]
     async fn test_insert() {
-        let (postgres_node, db) = setup().await;
+        let (postgres_container, db) = setup().await;
 
         let new_todo = DbNewTodo {
             text: "Test todo".to_string(),
@@ -112,22 +112,22 @@ mod tests {
         assert_eq!(inserted_todo.text, "Test todo");
         assert_eq!(inserted_todo.completed, false);
 
-        shutdown(postgres_node).await;
+        shutdown(postgres_container).await;
     }
 
     #[tokio::test]
     async fn test_get_values_empty() {
-        let (postgres_node, db) = setup().await;
+        let (postgres_container, db) = setup().await;
 
         let todos = db.get_values().await.unwrap();
         assert_eq!(todos.len(), 0);
 
-        shutdown(postgres_node).await;
+        shutdown(postgres_container).await;
     }
 
     #[tokio::test]
     async fn test_get_values() {
-        let (postgres_node, db) = setup().await;
+        let (postgres_container, db) = setup().await;
 
         let new_todo = DbNewTodo {
             text: "Test todo".to_string(),
@@ -139,12 +139,12 @@ mod tests {
         assert_eq!(todos[0].text, "Test todo");
         assert_eq!(todos[0].completed, false);
 
-        shutdown(postgres_node).await;
+        shutdown(postgres_container).await;
     }
 
     #[tokio::test]
     async fn test_update() {
-        let (postgres_node, db) = setup().await;
+        let (postgres_container, db) = setup().await;
 
         let new_todo = DbNewTodo {
             text: "Test todo".to_string(),
@@ -159,12 +159,12 @@ mod tests {
         assert_eq!(updated_todo.text, "Updated todo");
         assert_eq!(updated_todo.completed, true);
 
-        shutdown(postgres_node).await;
+        shutdown(postgres_container).await;
     }
 
     #[tokio::test]
     async fn test_update_not_found() {
-        let (postgres_node, db) = setup().await;
+        let (postgres_container, db) = setup().await;
 
         let not_found_id = Uuid::new_v4();
 
@@ -179,12 +179,12 @@ mod tests {
             DatabaseError::NotFound { id: _not_found_id }
         ));
 
-        shutdown(postgres_node).await;
+        shutdown(postgres_container).await;
     }
 
     #[tokio::test]
     async fn test_remove() {
-        let (postgres_node, db) = setup().await;
+        let (postgres_container, db) = setup().await;
 
         let new_todo = DbNewTodo {
             text: "Test todo".to_string(),
@@ -195,12 +195,12 @@ mod tests {
         let todos = db.get_values().await.unwrap();
         assert_eq!(todos.len(), 0);
 
-        shutdown(postgres_node).await;
+        shutdown(postgres_container).await;
     }
 
     #[tokio::test]
     async fn test_remove_not_found() {
-        let (postgres_node, db) = setup().await;
+        let (postgres_container, db) = setup().await;
 
         let not_found_id = Uuid::new_v4();
         let result = db.remove(not_found_id).await;
@@ -210,6 +210,6 @@ mod tests {
             DatabaseError::NotFound { id: _not_found_id }
         ));
 
-        shutdown(postgres_node).await;
+        shutdown(postgres_container).await;
     }
 }

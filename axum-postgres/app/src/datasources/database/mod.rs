@@ -1,9 +1,7 @@
-use anyhow::anyhow;
 use memory_db::MemoryDB;
 use mockall::automock;
 use models::{DbNewTodo, DbTodo, DbUpdateTodo};
 use postgres_db::PostgresDB;
-use std::sync::PoisonError;
 use uuid::Uuid;
 
 mod memory_db;
@@ -16,12 +14,6 @@ pub enum DatabaseError {
     NotFound { id: Uuid },
     #[error("database query failed: {0}")]
     Internal(#[from] anyhow::Error),
-}
-
-impl<T> From<PoisonError<T>> for DatabaseError {
-    fn from(error: PoisonError<T>) -> Self {
-        DatabaseError::Internal(anyhow!(error.to_string()))
-    }
 }
 
 pub enum Database {
