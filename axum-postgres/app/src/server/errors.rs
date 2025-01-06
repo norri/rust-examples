@@ -26,7 +26,7 @@ impl From<DatabaseError> for AppError {
     fn from(error: DatabaseError) -> Self {
         match error {
             DatabaseError::NotFound { .. } => AppError::NotFound(error.to_string()),
-            DatabaseError::Internal(error) => AppError::Unknown(error),
+            DatabaseError::Internal(_) => AppError::Unknown(error.into()),
         }
     }
 }
@@ -35,23 +35,23 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
             AppError::AxumJsonRejection(_) => {
-                warn!("Invalid JSON in request: {}", self);
+                warn!("Invalid JSON in request: {:?}", self);
                 (StatusCode::BAD_REQUEST, "failed to read json".to_string())
             }
             AppError::ValidationError(ref error) => {
-                warn!("Validation error: {}", self);
+                warn!("Validation error: {:?}", self);
                 (StatusCode::BAD_REQUEST, error.to_string())
             }
             AppError::BadRequest(ref message) => {
-                warn!("Bad Request: {}", self);
+                warn!("Bad Request: {:?}", self);
                 (StatusCode::BAD_REQUEST, message.clone())
             }
             AppError::NotFound(_) => {
-                warn!("Not found: {}", self);
+                warn!("Not found: {:?}", self);
                 (StatusCode::NOT_FOUND, "not found".to_string())
             }
             AppError::Unknown(_) => {
-                error!("Unknown error: {}", self);
+                error!("Unknown error: {:?}", self);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "unknown error".to_string(),

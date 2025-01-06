@@ -2,6 +2,7 @@ use super::{
     models::{DbNewTodo, DbTodo, DbUpdateTodo},
     DatabaseError,
 };
+use anyhow::Context;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::time::Duration;
 use uuid::Uuid;
@@ -24,7 +25,7 @@ impl PostgresDB {
         let rows = sqlx::query_as::<_, DbTodo>("SELECT id, text, completed FROM todos")
             .fetch_all(&self.pool)
             .await
-            .expect("failed to fetch todos");
+            .context("failed to fetch todos")?;
         Ok(rows)
     }
 
@@ -37,7 +38,7 @@ impl PostgresDB {
         .bind(false) // default completed to false
         .fetch_one(&self.pool)
         .await
-        .expect("failed to insert todo");
+        .context("failed to insert todo")?;
         Ok(row)
     }
 
@@ -46,7 +47,7 @@ impl PostgresDB {
             .bind(id)
             .execute(&self.pool)
             .await
-            .expect("failed to delete todo");
+            .context("failed to delete todo")?;
         if result.rows_affected() == 0 {
             return Err(DatabaseError::NotFound { id });
         }
@@ -64,7 +65,7 @@ impl PostgresDB {
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => DatabaseError::NotFound { id },
-            e => DatabaseError::Internal(e.into()),
+            e => anyhow::Error::from(e).context("failed to update todo").into(),
         })?;
         Ok(row)
     }

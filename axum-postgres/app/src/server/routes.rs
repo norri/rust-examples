@@ -15,7 +15,7 @@ use tower_http::{
     timeout::TimeoutLayer,
     trace::TraceLayer,
 };
-use tracing::{debug_span, error};
+use tracing::{error, info_span};
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 
@@ -28,20 +28,24 @@ pub fn new_router(app_state: SharedState) -> Router {
             MakeRequestUuid,
         ))
         .layer(
-            TraceLayer::new_for_http().make_span_with(|req: &Request<_>| {
-                let request_id = req.headers().get(REQUEST_ID_HEADER);
-                let method = req.method();
-                let uri = req.uri();
-                // user is added if the request is authenticated
-                let user = tracing::field::Empty;
+            TraceLayer::new_for_http()
+                .make_span_with(|req: &Request<_>| {
+                    let request_id = req.headers().get(REQUEST_ID_HEADER);
+                    let method = req.method();
+                    let uri = req.uri();
+                    // user is added if the request is authenticated
+                    let user = tracing::field::Empty;
 
-                if let Some(request_id) = request_id {
-                    debug_span!("http_request", request_id = ?request_id, %method, %uri, user)
-                } else {
-                    error!("could not extract request_id");
-                    debug_span!("http_request", %method, %uri, user)
-                }
-            }),
+                    if let Some(request_id) = request_id {
+                        info_span!("http_request", request_id = ?request_id, %method, %uri, user)
+                    } else {
+                        error!("could not extract request_id");
+                        info_span!("http_request", %method, %uri, user)
+                    }
+                })
+                // By default `TraceLayer` will log 5xx responses but we're doing our specific
+                // logging of errors so disable that
+                .on_failure(()),
         )
         .layer(PropagateRequestIdLayer::new(x_request_id))
         .layer(TimeoutLayer::new(Duration::from_secs(30)));

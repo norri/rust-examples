@@ -22,7 +22,7 @@ type SharedState = Arc<AppState>;
 async fn main() {
     let config = Config::new();
 
-    logger::init(config.log_level);
+    logger::init(config.log_level, !config.environment.is_local());
 
     let db = new_database(config.database_url, config.database_max_connections)
         .await
