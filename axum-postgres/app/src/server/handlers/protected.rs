@@ -24,7 +24,7 @@ mod tests {
     #[tokio::test]
     async fn test_protected() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/protected"), get(protected)).await;
+        let app = init_router(mock_db, "/protected", get(protected)).await;
 
         let header = &format!(
             "Basic {}",

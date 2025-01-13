@@ -1,6 +1,5 @@
 use crate::server::errors::AppError;
 use axum::{
-    async_trait,
     extract::{FromRequest, Request},
     Json,
 };
@@ -9,7 +8,6 @@ use validator::Validate;
 
 pub struct ValidatedJson<T>(pub T);
 
-#[async_trait]
 impl<T, S> FromRequest<S> for ValidatedJson<T>
 where
     T: DeserializeOwned + Validate,
@@ -27,11 +25,15 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        datasources::database::MockDatabase,
+        server::domain::errors::ErrorResponse,
+        test_utils::{init_router, read_response_body, test_post},
+    };
     use axum::http::StatusCode;
     use axum::routing::post;
     use serde::{Deserialize, Serialize};
     use validator::Validate;
-    use crate::{datasources::database::MockDatabase, server::domain::errors::ErrorResponse, test_utils::{init_router, read_response_body, test_post}};
 
     #[derive(Debug, Deserialize, Serialize, Validate)]
     struct TestPayload {
@@ -39,33 +41,31 @@ mod tests {
         field: String,
     }
 
-    async fn test_handler(
-        ValidatedJson(_): ValidatedJson<TestPayload>,
-    ) -> Result<(), AppError> {
+    async fn test_handler(ValidatedJson(_): ValidatedJson<TestPayload>) -> Result<(), AppError> {
         Ok(())
     }
 
     #[tokio::test]
     async fn test_valid_json() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/json"), post(test_handler)).await;
+        let app = init_router(mock_db, "/json", post(test_handler)).await;
 
         let payload = TestPayload {
             field: "value".to_string(),
         };
-        let response = test_post(app, "/json".to_string(), payload).await;
+        let response = test_post(app, "/json", payload).await;
         assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]
     async fn test_invalid_json() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/json"), post(test_handler)).await;
+        let app = init_router(mock_db, "/json", post(test_handler)).await;
 
         let payload = TestPayload {
             field: "".to_string(),
         };
-        let response = test_post(app, "/json".to_string(), payload).await;
+        let response = test_post(app, "/json", payload).await;
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
         let response_body: ErrorResponse = read_response_body(response).await;
@@ -75,16 +75,14 @@ mod tests {
     #[tokio::test]
     async fn test_malformed_json() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/json"), post(test_handler)).await;
+        let app = init_router(mock_db, "/json", post(test_handler)).await;
 
         #[derive(Debug, Deserialize, Serialize)]
         struct InvalidPayload {
             field: u32,
         }
-        let payload = InvalidPayload {
-            field: 10,
-        };
-        let response = test_post(app, "/json".to_string(), payload).await;
+        let payload = InvalidPayload { field: 10 };
+        let response = test_post(app, "/json", payload).await;
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
         let response_body: ErrorResponse = read_response_body(response).await;

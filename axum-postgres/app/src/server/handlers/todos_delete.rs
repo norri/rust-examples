@@ -31,10 +31,10 @@ mod tests {
     async fn test_todos_delete() {
         let mut mock_db = MockDatabase::new();
         mock_db.expect_remove().returning(|_| Ok(()));
-        let app = init_router(mock_db, format!("/todos/:id"), delete(todos_delete)).await;
+        let app = init_router(mock_db, "/todos/{id}", delete(todos_delete)).await;
 
         let id = Uuid::new_v4().to_string();
-        let response = test_delete(app, format!("/todos/{}", id)).await;
+        let response = test_delete(app, &format!("/todos/{}", id)).await;
         assert_eq!(response.status(), StatusCode::OK);
     }
 
@@ -44,19 +44,19 @@ mod tests {
         mock_db
             .expect_remove()
             .returning(|_| Err(DatabaseError::NotFound { id: Uuid::new_v4() }));
-        let app = init_router(mock_db, format!("/todos/:id"), delete(todos_delete)).await;
+        let app = init_router(mock_db, "/todos/{id}", delete(todos_delete)).await;
 
         let id = Uuid::new_v4().to_string();
-        let response = test_delete(app, format!("/todos/{}", id)).await;
+        let response = test_delete(app, &format!("/todos/{}", id)).await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_todos_delete_invalid_id() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/todos/:id"), delete(todos_delete)).await;
+        let app = init_router(mock_db, "/todos/{id}", delete(todos_delete)).await;
 
-        let response = test_delete(app, format!("/todos/{}", "invalid")).await;
+        let response = test_delete(app, &format!("/todos/{}", "invalid")).await;
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
         let response_body: ErrorResponse = read_response_body(response).await;

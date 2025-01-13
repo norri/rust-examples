@@ -40,12 +40,12 @@ mod tests {
                 completed: false,
             })
         });
-        let app = init_router(mock_db, format!("/todos"), post(todos_create)).await;
+        let app = init_router(mock_db, "/todos", post(todos_create)).await;
 
         let new_todo = NewTodo {
             text: "test".to_string(),
         };
-        let response = test_post(app, format!("/todos"), new_todo).await;
+        let response = test_post(app, "/todos", new_todo).await;
         assert_eq!(response.status(), StatusCode::CREATED);
 
         let todo: Todo = read_response_body(response).await;
@@ -56,12 +56,12 @@ mod tests {
     #[tokio::test]
     async fn test_todos_create_invalid_text_too_short() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/todos"), post(todos_create)).await;
+        let app = init_router(mock_db, "/todos", post(todos_create)).await;
 
         let invalid_todo = NewTodo {
             text: "".to_string(),
         };
-        let response = test_post(app, format!("/todos"), invalid_todo).await;
+        let response = test_post(app, "/todos", invalid_todo).await;
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
         let response_body: ErrorResponse = read_response_body(response).await;
@@ -74,12 +74,12 @@ mod tests {
     #[tokio::test]
     async fn test_todos_create_invalid_text_too_long() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/todos"), post(todos_create)).await;
+        let app = init_router(mock_db, "/todos", post(todos_create)).await;
 
         let invalid_todo = NewTodo {
             text: "a".repeat(201),
         };
-        let response = test_post(app, format!("/todos"), invalid_todo).await;
+        let response = test_post(app, "/todos", invalid_todo).await;
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
         let response_body: ErrorResponse = read_response_body(response).await;

@@ -2,7 +2,6 @@ use crate::server::errors::AuthError;
 use crate::SharedState;
 use axum::RequestPartsExt;
 use axum::{
-    async_trait,
     extract::{FromRef, FromRequestParts},
     http::request::Parts,
 };
@@ -12,7 +11,6 @@ use tracing::{field, Span};
 
 pub struct AuthBasic(pub String);
 
-#[async_trait]
 impl<S> FromRequestParts<S> for AuthBasic
 where
     SharedState: FromRef<S>,
@@ -56,7 +54,7 @@ mod tests {
     #[tokio::test]
     async fn test_valid_credentials() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/protected"), get(test_auth)).await;
+        let app = init_router(mock_db, "/protected", get(test_auth)).await;
 
         let header = &format!(
             "Basic {}",
@@ -69,7 +67,7 @@ mod tests {
     #[tokio::test]
     async fn test_invalid_credentials() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/protected"), get(test_auth)).await;
+        let app = init_router(mock_db, "/protected", get(test_auth)).await;
 
         let header = &format!(
             "Basic {}",
@@ -85,7 +83,7 @@ mod tests {
     #[tokio::test]
     async fn test_empty_credentials() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/protected"), get(test_auth)).await;
+        let app = init_router(mock_db, "/protected", get(test_auth)).await;
 
         let header = &format!(
             "Basic {}",
@@ -101,7 +99,7 @@ mod tests {
     #[tokio::test]
     async fn test_missing_authorization_header() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/protected"), get(test_auth)).await;
+        let app = init_router(mock_db, "/protected", get(test_auth)).await;
 
         let response = test_authenticated(app, "/protected", "GET", "").await;
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
@@ -113,7 +111,7 @@ mod tests {
     #[tokio::test]
     async fn test_malformed_authorization_header() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/protected"), get(test_auth)).await;
+        let app = init_router(mock_db, "/protected", get(test_auth)).await;
 
         let header = "Basic malformed_header";
         let response = test_authenticated(app, "/protected", "GET", header).await;

@@ -1,8 +1,8 @@
+use crate::server::domain::todos::Todo;
 use crate::server::domain::todos::UpdateTodo;
 use crate::server::errors::AppError;
 use crate::server::extractors::request_json::ValidatedJson;
 use crate::SharedState;
-use crate::server::domain::todos::Todo;
 use axum::{
     extract::{Path, State},
     Json,
@@ -52,14 +52,14 @@ mod tests {
                 completed: update_todo.completed.unwrap_or(false),
             })
         });
-        let app = init_router(mock_db, format!("/todos/:id"), post(todos_update)).await;
+        let app = init_router(mock_db, "/todos/{id}", post(todos_update)).await;
 
         let update_todo = UpdateTodo {
             text: Some("updated".to_string()),
             completed: Some(true),
         };
         let id = Uuid::new_v4().to_string();
-        let response = test_post(app, format!("/todos/{}", id), update_todo).await;
+        let response = test_post(app, &format!("/todos/{}", id), update_todo).await;
         assert_eq!(response.status(), StatusCode::OK);
 
         let todo: Todo = read_response_body(response).await;
@@ -75,26 +75,26 @@ mod tests {
         mock_db
             .expect_update()
             .returning(move |_, _| Err(DatabaseError::NotFound { id }));
-        let app = init_router(mock_db, format!("/todos/:id"), post(todos_update)).await;
+        let app = init_router(mock_db, "/todos/{id}", post(todos_update)).await;
 
         let update_todo = UpdateTodo {
             text: Some("updated".to_string()),
             completed: Some(true),
         };
-        let response = test_post(app, format!("/todos/{}", id), update_todo).await;
+        let response = test_post(app, &format!("/todos/{}", id), update_todo).await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_todos_update_invalid_id() {
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/todos/:id"), post(todos_update)).await;
+        let app = init_router(mock_db, "/todos/{id}", post(todos_update)).await;
 
         let update_todo = UpdateTodo {
             text: Some("updated".to_string()),
             completed: Some(true),
         };
-        let response = test_post(app, format!("/todos/{}", "invalid"), update_todo).await;
+        let response = test_post(app, &format!("/todos/{}", "invalid"), update_todo).await;
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
         let response_body: ErrorResponse = read_response_body(response).await;
@@ -106,14 +106,14 @@ mod tests {
         let id = Uuid::new_v4();
 
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/todos/:id"), post(todos_update)).await;
+        let app = init_router(mock_db, "/todos/{id}", post(todos_update)).await;
 
         #[derive(serde::Serialize)]
         struct InvalidRequest {
             text: i32,
         }
         let update_todo = InvalidRequest { text: 100 };
-        let response = test_post(app, format!("/todos/{}", id), update_todo).await;
+        let response = test_post(app, &format!("/todos/{}", id), update_todo).await;
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
         let response_body: ErrorResponse = read_response_body(response).await;
@@ -125,13 +125,13 @@ mod tests {
         let id = Uuid::new_v4();
 
         let mock_db = MockDatabase::new();
-        let app = init_router(mock_db, format!("/todos/:id"), post(todos_update)).await;
+        let app = init_router(mock_db, "/todos/{id}", post(todos_update)).await;
 
         let update_todo = UpdateTodo {
             text: None,
             completed: None,
         };
-        let response = test_post(app, format!("/todos/{}", id), update_todo).await;
+        let response = test_post(app, &format!("/todos/{}", id), update_todo).await;
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
         let response_body: ErrorResponse = read_response_body(response).await;

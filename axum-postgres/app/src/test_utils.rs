@@ -14,19 +14,17 @@ use tower::ServiceExt;
 
 pub async fn init_router(
     mock_db: MockDatabase,
-    uri: String,
+    uri: &str,
     router: MethodRouter<SharedState>,
 ) -> Router {
     let app_state = Arc::new(AppState {
         db: Database::Mock(mock_db),
         credentials: vec![("user".to_string(), "pass".to_string())],
     });
-    Router::new()
-        .route(uri.as_str(), router)
-        .with_state(app_state)
+    Router::new().route(uri, router).with_state(app_state)
 }
 
-pub async fn test_get(app: Router, uri: String) -> Response<Body> {
+pub async fn test_get(app: Router, uri: &str) -> Response<Body> {
     app.oneshot(
         Request::builder()
             .method("GET")
@@ -38,7 +36,7 @@ pub async fn test_get(app: Router, uri: String) -> Response<Body> {
     .unwrap()
 }
 
-pub async fn test_post<T>(app: Router, uri: String, body: T) -> Response<Body>
+pub async fn test_post<T>(app: Router, uri: &str, body: T) -> Response<Body>
 where
     T: serde::Serialize,
 {
@@ -54,7 +52,7 @@ where
     .unwrap()
 }
 
-pub async fn test_delete(app: Router, uri: String) -> Response<Body> {
+pub async fn test_delete(app: Router, uri: &str) -> Response<Body> {
     app.oneshot(
         Request::builder()
             .method("DELETE")

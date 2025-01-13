@@ -52,7 +52,7 @@ pub fn new_router(app_state: SharedState) -> Router {
 
     let api_routes = Router::new()
         .route("/todos", get(todos_list).post(todos_create))
-        .route("/todos/:id", post(todos_update).delete(todos_delete))
+        .route("/todos/{id}", post(todos_update).delete(todos_delete))
         .route("/protected", get(protected));
 
     Router::new()
@@ -80,7 +80,7 @@ mod tests {
         });
         let app = new_router(app_state);
 
-        let response = test_get(app, format!("/status")).await;
+        let response = test_get(app, "/status").await;
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();

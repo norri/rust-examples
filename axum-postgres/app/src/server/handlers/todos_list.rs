@@ -1,13 +1,10 @@
+use crate::server::domain::todos::Todo;
 use crate::server::domain::todos::TodosResponse;
 use crate::server::errors::AppError;
 use crate::SharedState;
-use crate::server::domain::todos::Todo;
 use axum::{extract::State, Json};
 
-pub async fn todos_list(
-    State(state): State<SharedState>,
-) -> Result<Json<TodosResponse>, AppError> {
-
+pub async fn todos_list(State(state): State<SharedState>) -> Result<Json<TodosResponse>, AppError> {
     let db_todos = state.db.get_values().await?;
     let todos: Vec<Todo> = db_todos.into_iter().map(|db_todo| db_todo.into()).collect();
     Ok(Json(TodosResponse { todos }))
@@ -28,9 +25,9 @@ mod tests {
     async fn test_todos_list_empty() {
         let mut mock_db = MockDatabase::new();
         mock_db.expect_get_values().returning(|| Ok(vec![]));
-        let app = init_router(mock_db, format!("/todos"), get(todos_list)).await;
+        let app = init_router(mock_db, "/todos", get(todos_list)).await;
 
-        let response = test_get(app, "/todos".to_string()).await;
+        let response = test_get(app, "/todos").await;
         assert_eq!(response.status(), StatusCode::OK);
 
         let response_body: TodosResponse = read_response_body(response).await;
@@ -49,9 +46,9 @@ mod tests {
                 completed: false,
             }])
         });
-        let app = init_router(mock_db, format!("/todos"), get(todos_list)).await;
+        let app = init_router(mock_db, "/todos", get(todos_list)).await;
 
-        let response = test_get(app, "/todos".to_string()).await;
+        let response = test_get(app, "/todos").await;
         assert_eq!(response.status(), StatusCode::OK);
 
         let response_body: TodosResponse = read_response_body(response).await;
