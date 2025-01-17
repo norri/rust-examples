@@ -62,7 +62,6 @@ mod tests {
     use std::env;
 
     #[test]
-    #[ignore] // TODO: Fix this test
     fn test_config_new_with_env_vars() {
         env::set_var("DATABASE_URL", "postgres://localhost/test");
         env::set_var("PORT", "4000");
@@ -86,7 +85,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: Fix this test
     fn test_config_new_without_env_vars() {
         env::remove_var("DATABASE_URL");
         env::remove_var("PORT");

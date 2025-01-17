@@ -46,10 +46,8 @@ mod tests {
         mock_db.expect_update().returning(|_, update_todo| {
             Ok(DbTodo {
                 id: Uuid::new_v4(),
-                text: update_todo
-                    .text
-                    .unwrap_or_else(|| "default text".to_string()),
-                completed: update_todo.completed.unwrap_or(false),
+                text: update_todo.text.unwrap(),
+                completed: update_todo.completed.unwrap(),
             })
         });
         let app = init_router(mock_db, "/todos/{id}", post(todos_update)).await;

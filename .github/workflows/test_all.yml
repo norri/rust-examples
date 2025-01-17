@@ -34,6 +34,8 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
       - name: Run lint
         run: |
           echo "Running lint in ${{ matrix.project }}"
@@ -43,4 +45,4 @@ jobs:
         run: |
           echo "Running tests in ${{ matrix.project }}"
           cd ${{ matrix.project }}
-          cargo test --no-fail-fast
+          cargo nextest run --no-fail-fast
