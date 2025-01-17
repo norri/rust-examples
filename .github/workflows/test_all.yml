@@ -35,10 +35,7 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
       - name: Install cargo-nextest
-        uses: baptiste0928/cargo-install@v1
-        with:
-          crate: cargo-nextest
-          locked: true
+        uses: taiki-e/install-action@nextest
       - name: Run lint
         run: |
           echo "Running lint in ${{ matrix.project }}"
