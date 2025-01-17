@@ -5,7 +5,7 @@ use axum::Json;
 
 pub async fn protected(AuthBasic(user): AuthBasic) -> Result<Json<MessageResponse>, AppError> {
     tracing::info!("User {} accessed protected route", user);
-    
+
     Ok(Json(MessageResponse {
         message: format!("Hello, {}!", user),
     }))
