@@ -1,0 +1,13 @@
+[package]
+name = "axum-prometheus"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.8.1"
+metrics = { version = "0.24.1", default-features = false }
+metrics-exporter-prometheus = { version = "0.16.1", default-features = false }
+metrics-process = "2.4.0"
+tokio = { version = "1.43.0", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
