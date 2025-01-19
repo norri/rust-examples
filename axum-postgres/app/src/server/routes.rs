@@ -1,3 +1,4 @@
+use super::openapi::new_openapi_router;
 use crate::{
     server::handlers::{protected, todos_create, todos_delete, todos_list, todos_update},
     SharedState,
@@ -5,6 +6,7 @@ use crate::{
 use axum::{
     http::{HeaderName, Request},
     routing::get,
+    Router,
 };
 use std::time::Duration;
 use tower::ServiceBuilder;
@@ -18,7 +20,11 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 
-pub fn add_routes(app_state: SharedState) -> OpenApiRouter {
+pub fn new_router(app_state: SharedState) -> Router {
+    new_openapi_router().merge(add_routes(app_state))
+}
+
+fn add_routes(app_state: SharedState) -> OpenApiRouter {
     let x_request_id = HeaderName::from_static(REQUEST_ID_HEADER);
 
     let middleware = ServiceBuilder::new()

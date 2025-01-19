@@ -2,7 +2,7 @@ use crate::server::{
     domain::{common::MessageResponse, errors::ErrorResponse},
     errors::AppError,
     extractors::auth_basic::AuthBasic,
-    router::PROTECTED_TAG,
+    openapi::PROTECTED_TAG,
 };
 use axum::Json;
 

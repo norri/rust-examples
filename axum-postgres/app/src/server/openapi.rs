@@ -1,5 +1,3 @@
-use super::routes::add_routes;
-use crate::SharedState;
 use axum::Router;
 use utoipa::{
     openapi::security::{Http, HttpAuthScheme, SecurityScheme},
@@ -35,32 +33,22 @@ impl Modify for SecurityAddon {
     }
 }
 
-pub fn new_router(app_state: SharedState) -> Router {
-    let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
-        .merge(add_routes(app_state))
-        .split_for_parts();
+pub fn new_openapi_router() -> Router {
+    let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi()).split_for_parts();
 
     router.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api))
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
-    use crate::datasources::database::{Database, MockDatabase};
     use crate::test_utils::test_get;
-    use crate::AppState;
 
     use super::*;
     use axum::http::StatusCode;
 
     #[tokio::test]
     async fn test_new_server() {
-        let app_state = Arc::new(AppState {
-            db: Database::Mock(MockDatabase::new()),
-            credentials: vec![("user".to_string(), "password".to_string())],
-        });
-        let app = new_router(app_state);
+        let app = new_openapi_router();
 
         let response = test_get(app, "/swagger-ui").await;
         assert_eq!(response.status(), StatusCode::SEE_OTHER);

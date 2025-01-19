@@ -6,7 +6,7 @@ use crate::{
         },
         errors::AppError,
         extractors::request_json::ValidatedJson,
-        router::TODO_TAG,
+        openapi::TODO_TAG,
     },
     SharedState,
 };

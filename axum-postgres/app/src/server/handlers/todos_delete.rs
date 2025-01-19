@@ -1,5 +1,5 @@
 use crate::{
-    server::{domain::errors::ErrorResponse, errors::AppError, router::TODO_TAG},
+    server::{domain::errors::ErrorResponse, errors::AppError, openapi::TODO_TAG},
     SharedState,
 };
 use axum::{

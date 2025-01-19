@@ -1,6 +1,6 @@
 use config::Config;
 use datasources::database::{new_database, Database};
-use server::router::new_router;
+use server::routes::new_router;
 use std::sync::Arc;
 use tokio::signal;
 

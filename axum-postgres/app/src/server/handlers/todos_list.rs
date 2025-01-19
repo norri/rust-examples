@@ -5,7 +5,7 @@ use crate::{
             todos::{Todo, TodosResponse},
         },
         errors::AppError,
-        router::TODO_TAG,
+        openapi::TODO_TAG,
     },
     SharedState,
 };
