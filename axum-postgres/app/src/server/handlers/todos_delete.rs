@@ -1,10 +1,29 @@
-use crate::{server::errors::AppError, SharedState};
+use crate::{
+    server::{domain::errors::ErrorResponse, errors::AppError, router::TODO_TAG},
+    SharedState,
+};
 use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
 use uuid::Uuid;
 
+/// Delete Todo item by id
+///
+/// Delete Todo item from in-memory storage by id. Returns either 200 success of 404 with TodoError if Todo is not found.
+#[utoipa::path(
+    delete,
+    path = "/{id}",
+    tag = TODO_TAG,
+    responses(
+        (status = 200, description = "Todo deleted successfully"),
+        (status = 404, description = "Todo not found"),
+        (status = 500, description = "Internal error", body = ErrorResponse)
+    ),
+    params(
+        ("id" = String, Path, description = "Todo id")
+    )
+)]
 pub async fn todos_delete(
     Path(id): Path<String>,
     State(state): State<SharedState>,

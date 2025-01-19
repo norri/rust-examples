@@ -1,14 +1,40 @@
-use crate::server::domain::todos::Todo;
-use crate::server::domain::todos::UpdateTodo;
-use crate::server::errors::AppError;
-use crate::server::extractors::request_json::ValidatedJson;
-use crate::SharedState;
+use crate::{
+    server::{
+        domain::{
+            errors::ErrorResponse,
+            todos::{Todo, UpdateTodo},
+        },
+        errors::AppError,
+        extractors::request_json::ValidatedJson,
+        router::TODO_TAG,
+    },
+    SharedState,
+};
 use axum::{
     extract::{Path, State},
     Json,
 };
 use uuid::Uuid;
 
+/// Update Todo item by id
+///
+/// Update Todo item text or mark done by given id. Return only status 200 on success or 404 if Todo is not found.
+#[utoipa::path(
+    post,
+    path = "/{id}",
+    tag = TODO_TAG,
+    request_body = UpdateTodo,
+    responses(
+        (status = 200, description = "Todo updated successfully", body = Todo),
+        (status = 400, description = "Bad request", body = ErrorResponse, 
+            example = json!(ErrorResponse { error: "text: length must be between 1 and 200".to_string() })),
+        (status = 404, description = "Todo not found"),
+        (status = 500, description = "Internal error", body = ErrorResponse)
+    ),
+    params(
+        ("id" = String, Path, description = "Todo id"),
+    )
+)]
 pub async fn todos_update(
     Path(id): Path<String>,
     State(state): State<SharedState>,

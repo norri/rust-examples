@@ -18,6 +18,9 @@ tower = { version = "0.5.2", features = ["util", "timeout"] }
 tower-http = { version = "0.6.2", features = ["add-extension", "request-id", "timeout", "trace"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
+utoipa = { version = "5.3.1", features = ["axum_extras"] }
+utoipa-axum = "0.2.0"
+utoipa-swagger-ui = { version = "9.0.0", features = ["axum"] }
 uuid = { version = "1.11.0", features = ["serde", "v4"] }
 validator = { version = "0.19.0", features = ["derive"] }
 

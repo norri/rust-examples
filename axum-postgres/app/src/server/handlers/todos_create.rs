@@ -1,12 +1,34 @@
-use crate::server::errors::AppError;
-use crate::server::extractors::request_json::ValidatedJson;
-use crate::SharedState;
 use crate::{
     datasources::database::models::DbNewTodo,
-    server::domain::todos::{NewTodo, Todo},
+    server::{
+        domain::{
+            errors::ErrorResponse,
+            todos::{NewTodo, Todo},
+        },
+        errors::AppError,
+        extractors::request_json::ValidatedJson,
+        router::TODO_TAG,
+    },
+    SharedState,
 };
 use axum::{extract::State, http::StatusCode, Json};
 
+/// Create new Todo
+///
+/// Tries to create a new Todo item to in-memory storage or fails with 409 conflict if already exists.
+#[utoipa::path(
+    post,
+    path = "/",
+    tag = TODO_TAG,
+    request_body = NewTodo,
+    responses(
+        (status = 201, description = "Todo item created successfully", body = Todo),
+        (status = 400, description = "Bad request", body = ErrorResponse, 
+            example = json!(ErrorResponse { error: "text: length must be between 1 and 200".to_string() })),
+        (status = 404, description = "Todo not found"),
+        (status = 500, description = "Internal error", body = ErrorResponse)
+    )
+)]
 pub async fn todos_create(
     State(state): State<SharedState>,
     ValidatedJson(input): ValidatedJson<NewTodo>,
