@@ -1,6 +1,6 @@
 use config::Config;
 use datasources::database::{new_database, Database};
-use server::routes::new_router;
+use server::router::new_router;
 use std::sync::Arc;
 use tokio::signal;
 
@@ -32,7 +32,7 @@ async fn main() {
         credentials: config.credentials,
     });
 
-    let app = new_router(app_state);
+    let router = new_router(app_state);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port))
         .await
@@ -41,7 +41,7 @@ async fn main() {
         "listening on {}",
         listener.local_addr().expect("could not get local address")
     );
-    axum::serve(listener, app)
+    axum::serve(listener, router.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await
         .expect("server failed");

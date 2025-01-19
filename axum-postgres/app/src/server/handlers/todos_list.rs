@@ -1,9 +1,28 @@
-use crate::server::domain::todos::Todo;
-use crate::server::domain::todos::TodosResponse;
-use crate::server::errors::AppError;
-use crate::SharedState;
+use crate::{
+    server::{
+        domain::{
+            errors::ErrorResponse,
+            todos::{Todo, TodosResponse},
+        },
+        errors::AppError,
+        router::TODO_TAG,
+    },
+    SharedState,
+};
 use axum::{extract::State, Json};
 
+/// List all Todo items
+///
+/// List all Todo items from in-memory storage.
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = TODO_TAG,
+    responses(
+        (status = 200, description = "List all todos successfully", body = TodosResponse ),
+        (status = 500, description = "Internal error", body = ErrorResponse)
+    )
+)]
 pub async fn todos_list(State(state): State<SharedState>) -> Result<Json<TodosResponse>, AppError> {
     let db_todos = state.db.get_values().await?;
     let todos: Vec<Todo> = db_todos.into_iter().map(|db_todo| db_todo.into()).collect();

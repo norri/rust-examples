@@ -1,15 +1,19 @@
 use crate::datasources::database::models::DbTodo;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use validator::Validate;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct TodosResponse {
     pub todos: Vec<Todo>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+/// Item to do.
+#[derive(Debug, Deserialize, Serialize, ToSchema, Clone)]
 pub struct Todo {
+    #[schema(example = "839b56dc-42cb-4dd2-8390-6f2c628d52dd")]
     pub id: String,
+    #[schema(example = "Buy groceries")]
     pub text: String,
     pub completed: bool,
 }
@@ -24,14 +28,16 @@ impl From<DbTodo> for Todo {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Validate)]
+#[derive(Debug, Deserialize, Serialize, Validate, ToSchema)]
 pub struct NewTodo {
+    #[schema(example = "Buy groceries")]
     #[validate(length(min = 1, max = 200, message = "length must be between 1 and 200"))]
     pub text: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, Validate)]
+#[derive(Debug, Deserialize, Serialize, Validate, ToSchema)]
 pub struct UpdateTodo {
+    #[schema(example = "Buy groceries")]
     #[validate(length(min = 1, max = 200, message = "length must be between 1 and 200"))]
     pub text: Option<String>,
     pub completed: Option<bool>,

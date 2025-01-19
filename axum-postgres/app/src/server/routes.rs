@@ -1,12 +1,10 @@
-use super::handlers::{
-    protected::protected, todos_create::todos_create, todos_delete::todos_delete,
-    todos_list::todos_list, todos_update::todos_update,
+use crate::{
+    server::handlers::{protected, todos_create, todos_delete, todos_list, todos_update},
+    SharedState,
 };
-use crate::SharedState;
 use axum::{
     http::{HeaderName, Request},
-    routing::{get, post},
-    Router,
+    routing::get,
 };
 use std::time::Duration;
 use tower::ServiceBuilder;
@@ -16,10 +14,11 @@ use tower_http::{
     trace::TraceLayer,
 };
 use tracing::{error, info_span};
+use utoipa_axum::{router::OpenApiRouter, routes};
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 
-pub fn new_router(app_state: SharedState) -> Router {
+pub fn add_routes(app_state: SharedState) -> OpenApiRouter {
     let x_request_id = HeaderName::from_static(REQUEST_ID_HEADER);
 
     let middleware = ServiceBuilder::new()
@@ -50,14 +49,19 @@ pub fn new_router(app_state: SharedState) -> Router {
         .layer(PropagateRequestIdLayer::new(x_request_id))
         .layer(TimeoutLayer::new(Duration::from_secs(30)));
 
-    let api_routes = Router::new()
-        .route("/todos", get(todos_list).post(todos_create))
-        .route("/todos/{id}", post(todos_update).delete(todos_delete))
-        .route("/protected", get(protected));
+    let todos_api_routes = OpenApiRouter::new()
+        .routes(routes!(todos_list::todos_list, todos_create::todos_create))
+        .routes(routes!(
+            todos_update::todos_update,
+            todos_delete::todos_delete
+        ));
 
-    Router::new()
+    let protected_routes = OpenApiRouter::new().routes(routes!(protected::protected));
+
+    OpenApiRouter::new()
         .route("/status", get(|| async { "OK" }))
-        .nest("/api/v1", api_routes)
+        .nest("/api/v1/todos", todos_api_routes)
+        .nest("/api/v1/protected", protected_routes)
         .layer(middleware)
         .with_state(app_state)
 }
@@ -70,6 +74,7 @@ mod tests {
     use crate::AppState;
     use axum::body::to_bytes;
     use axum::http::StatusCode;
+    use axum::Router;
     use std::sync::Arc;
 
     #[tokio::test]
@@ -78,7 +83,7 @@ mod tests {
             db: Database::Mock(MockDatabase::new()),
             credentials: vec![("user".to_string(), "password".to_string())],
         });
-        let app = new_router(app_state);
+        let app: Router = add_routes(app_state).into();
 
         let response = test_get(app, "/status").await;
         assert_eq!(response.status(), StatusCode::OK);
