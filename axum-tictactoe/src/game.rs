@@ -74,3 +74,119 @@ impl GameState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_row_wins() {
+        let mut game = GameState::new();
+        
+        // Test first row
+        game.board = vec![
+            Some(Player::X), Some(Player::X), Some(Player::X),
+            None, None, None,
+            None, None, None
+        ];
+        game.update_status();
+        assert!(matches!(game.status, GameStatus::Won(Player::X)));
+
+        // Test second row
+        game.board = vec![
+            None, None, None,
+            Some(Player::O), Some(Player::O), Some(Player::O),
+            None, None, None
+        ];
+        game.update_status();
+        assert!(matches!(game.status, GameStatus::Won(Player::O)));
+
+        // Test third row
+        game.board = vec![
+            None, None, None,
+            None, None, None,
+            Some(Player::X), Some(Player::X), Some(Player::X)
+        ];
+        game.update_status();
+        assert!(matches!(game.status, GameStatus::Won(Player::X)));
+    }
+
+    #[test]
+    fn test_column_wins() {
+        let mut game = GameState::new();
+        
+        // Test first column
+        game.board = vec![
+            Some(Player::X), None, None,
+            Some(Player::X), None, None,
+            Some(Player::X), None, None
+        ];
+        game.update_status();
+        assert!(matches!(game.status, GameStatus::Won(Player::X)));
+
+        // Test second column
+        game.board = vec![
+            None, Some(Player::O), None,
+            None, Some(Player::O), None,
+            None, Some(Player::O), None
+        ];
+        game.update_status();
+        assert!(matches!(game.status, GameStatus::Won(Player::O)));
+
+        // Test third column
+        game.board = vec![
+            None, None, Some(Player::X),
+            None, None, Some(Player::X),
+            None, None, Some(Player::X)
+        ];
+        game.update_status();
+        assert!(matches!(game.status, GameStatus::Won(Player::X)));
+    }
+
+    #[test]
+    fn test_diagonal_wins() {
+        let mut game = GameState::new();
+        
+        // Test main diagonal (top-left to bottom-right)
+        game.board = vec![
+            Some(Player::X), None, None,
+            None, Some(Player::X), None,
+            None, None, Some(Player::X)
+        ];
+        game.update_status();
+        assert!(matches!(game.status, GameStatus::Won(Player::X)));
+
+        // Test other diagonal (top-right to bottom-left)
+        game.board = vec![
+            None, None, Some(Player::O),
+            None, Some(Player::O), None,
+            Some(Player::O), None, None
+        ];
+        game.update_status();
+        assert!(matches!(game.status, GameStatus::Won(Player::O)));
+    }
+
+    #[test]
+    fn test_draw() {
+        let mut game = GameState::new();
+        game.board = vec![
+            Some(Player::X), Some(Player::O), Some(Player::X),
+            Some(Player::X), Some(Player::O), Some(Player::O),
+            Some(Player::O), Some(Player::X), Some(Player::X)
+        ];
+        game.update_status();
+        assert!(matches!(game.status, GameStatus::Draw));
+    }
+
+    #[test]
+    fn test_in_progress() {
+        let mut game = GameState::new();
+        game.board = vec![
+            Some(Player::X), Some(Player::O), None,
+            Some(Player::X), None, None,
+            None, None, None
+        ];
+        game.update_status();
+        assert!(matches!(game.status, GameStatus::InProgress));
+    }
+}
